@@ -1,0 +1,320 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define _GLIBCXX_USE_CXX11_ABI 0
+#include <iostream>
+#include <locale>
+#include <fstream>
+#include <cstdio>
+#include <conio.h>
+#include <string>
+#include <windows.h>
+#include <cmath>
+#pragma warning (disable : 4996)
+const int NotUsed = system("color 1E");
+using namespace std;
+
+
+class Game {
+
+	friend class Сhain;     // Полицейские имеют доступ к материалам следствия
+
+	char name[50];			//название
+	char genre[20];			//жанр
+	int year;				//год выпуска
+	char platform[10];		//игровая платформа (ПК, Xbox, PS)
+	char sys_req[100];			//системные треб
+	char developer[30];		//разработчик
+	int quantity;			//количество
+
+public:
+	///конструктор
+	Game() {
+		name[0] = EOF;	
+		genre[0] = EOF;
+		year = 0;
+		platform[0] = EOF;
+		sys_req[0] = EOF; 
+		developer[0] = EOF; 
+		quantity = 0;
+	}
+
+	///конструктор с параметрами
+	Game(char* name1, char* genre1, int year1, char* platform1, char* sys_req1, char* developer1, int quantity1) {
+		strcpy(name, name1);
+		strcpy(name, name1);
+		year = year1;
+		strcpy(name, name1);
+		strcpy(name, name1);
+		strcpy(name, name1);
+		quantity = quantity1;
+	}
+
+	///Сеттер
+	void set_game(void) 
+	{
+		cout << "Введите название " << endl;
+		cin >> name;
+		cout << "Введите жанр " << endl;
+		cin >> genre;
+		cout << "Введите год выпуска " << endl;
+		cin >> year;
+		cout << "Введите игровую платформу " << endl;
+		cin >> platform;
+		cout << "Введите системные требования " << endl;
+		cin >> sys_req;
+		cout << "Введите разработчика " << endl;
+		cin >> developer;
+		cout << "Введите количество " << endl;
+		cin >> quantity;
+	}
+	///просмотр
+	void show_game(void)
+	{
+		cout << "Название игры: "<< name << "; Жанр игры: " << genre << "; Год выпуска " << year <<  "; Игровая платформа " << platform << "; Cистемные требования " << sys_req << endl;
+		cout << "; Разработчик " << developer << "; Количество " << quantity << ";" << endl;
+	}
+};
+
+class Сhain {
+protected:
+
+	Сhain *next;						// более умелый полицейский, который получит дело, если для текущего оно слишком сложное
+	Game *game_list;					// массив с играми
+	int size_of_game_list;				// размер массива с играми
+	virtual void result(Game* game) {}	// собственно расследование
+
+public:
+
+	Сhain() { next = nullptr; }
+
+	///Если не обнаружили нужную нам игру в этом узле, переходим на следующий
+	Сhain* setNext(Сhain* сhain) 
+	{
+		next = сhain;
+		return next;
+	}
+
+	
+	/// Если не обнаружили нужную нам игру в этом узле, переходим на следующий
+	void search(Game* game) 
+	{	
+		bool flag = false;
+		for (int i = 0; i < size_of_game_list; i++)
+		{
+			cout << endl << endl << "ВЫВОД ПАРАМЕТРОВ " << game_list[i].name << " // " << game->name << " // " << game_list[i].platform << " // " << game->platform << " // " << game_list[i].quantity << " // " << game->quantity << endl << endl;
+			if (!strcmp(game_list[i].name, game->name) && !strcmp(game_list[i].platform, game->platform) && (game_list[i].quantity >= game->quantity))
+			{
+				flag = true;
+			}
+		}
+		
+		if (flag)
+		{
+			result(game);
+			return;
+		}
+		else
+		{
+			if (next)
+			{
+				next->search(game);
+			}
+			else
+			{
+				cout << "Это дело не раскрыть никому." << endl;
+				return;
+			}
+		}
+
+	}
+	
+	///запись в файл
+	void write_to_file(string file) 
+	{
+		ofstream out;
+		Game tmp;
+		try
+		{
+			out.open(file, ios::out);
+			if (!out.is_open()) {
+				throw 505;
+			}
+
+			cout << "Сколько игр вы хотите добавить в базу? " << endl;
+			cin >> size_of_game_list;
+			out.write(reinterpret_cast<char*>(&size_of_game_list), sizeof(int));
+			cout << endl << "Вы ввели  " << size_of_game_list << endl;
+
+			for (int i = 0; i < size_of_game_list; i++)
+			{
+				tmp.set_game();
+				out.write(reinterpret_cast<char*>(&tmp), sizeof(Game));
+				cout << endl << "!!!!!!!!!!!!!!КОНТРОЛЬНЫЙ ВЫВОД" << endl;
+				tmp.show_game();
+			}
+			out.close();
+		}
+		catch (const int &ex)
+		{
+			cout << "Ошибка открытия файла!" << endl << "Код ошибки: #" << ex << endl;
+		}
+
+	}
+
+	///чтение из файла
+	void read_from_file(string file)
+	{
+		ifstream in;
+		cout << "Считываем из файла" << endl;
+		try
+		{
+			in.open(file, ios::in);
+			if (!in.is_open()) 
+			{
+				throw 505;
+			}
+			else
+			{
+				if (in.peek() == EOF)
+				{
+					throw 510;
+				}
+			}
+			cout << "Считываем размер" << endl;
+			in.read(reinterpret_cast<char*>(&size_of_game_list), sizeof(int));
+			game_list = new Game[size_of_game_list];
+			cout << "Размер равен" << size_of_game_list << endl;
+			for (int i = 0; i < size_of_game_list; i++)
+			{
+				in.read(reinterpret_cast<char*>(&game_list[i]), sizeof(Game));
+				game_list[i].show_game();
+			}
+			in.close();
+		}
+		catch (const int &ex)
+		{
+			cout << "Ошибка работы файла!" << endl << "Код ошибки: #" << ex << endl;
+		}
+
+	}
+
+
+	virtual ~Сhain() 
+	{
+		if (game_list)
+		{
+			delete[] game_list;
+		}
+		if (next) 
+		{
+			delete next;
+		}
+	}
+};
+
+class Site : public Сhain {
+protected:
+	string filename = "Site.txt";
+	void result(Game* game) 
+	{
+		cout << "ТОВАР НАЙДЕН НА сайте" << endl;
+	}
+
+public:
+
+	Site() //конструктор
+	{
+		//write_to_file(filename);
+		read_from_file(filename); //заполнение массива с играми в базовом классе
+	}
+
+	///вывод базы на экран
+	void show_base(void) {
+		cout << "OLOLO " << size_of_game_list << endl;
+		for (int i = 0; i < size_of_game_list; i++)
+		{
+			cout << "Game number " << i + 1 << endl;
+			game_list[i].show_game();
+		}
+	}
+
+	string get_filename() { return filename; }
+};
+
+class Shop : public Сhain {
+protected:
+	string filename = "Shop.txt";
+	void result(Game* game)
+	{
+		cout << "ТОВАР НАЙДЕН В МАГАЗИНЕ" << endl;
+	}
+
+public:
+
+	Shop() //конструктор
+	{
+		//write_to_file(filename);
+		read_from_file(filename); //заполнение массива с играми в базовом классе
+	}
+	
+	///вывод базы на экран
+	void show_base(void) {
+		cout << "OLOLO " << size_of_game_list << endl;
+		for (int i = 0; i < size_of_game_list; i++)
+		{
+			cout << "Game number " << i + 1 << endl;
+			game_list[i].show_game();
+		}
+	}
+
+	string get_filename() { return filename; }
+};
+
+class Warehouse : public Сhain {
+protected:
+	string filename = "Warehouse.txt";
+	void result(Game* game)
+	{
+		cout << "ТОВАР НАЙДЕН НА СКЛАДЕ" << endl;
+	}
+
+public:
+
+	Warehouse() //конструктор
+	{
+		//write_to_file(filename);
+		read_from_file(filename); //заполнение массива с играми в базовом классе
+	}
+
+	///вывод базы на экран
+	void show_base(void) {
+		cout << "OLOLO " << size_of_game_list << endl;
+		for (int i = 0; i < size_of_game_list; i++)
+		{
+			cout << "Game number " << i + 1 << endl;
+			game_list[i].show_game();
+		}
+	}
+
+	string get_filename() {	return filename; }
+};
+
+int main() 
+{
+	setlocale(LC_ALL, "Russian");
+	
+	
+
+	std::cout << "OUTPUT:" << std::endl;
+	Сhain* chain = new Site;  // полицейский с наименьшим навыком ведения расследований
+	chain->setNext(new Shop)->setNext(new Warehouse);
+
+	cout << "Введите название игры для поиска " << endl << endl;
+	Game *game = new Game;
+	game->set_game();
+
+	chain -> search(game);
+	
+	delete game;
+	system("pause");
+	return 0;
+}
